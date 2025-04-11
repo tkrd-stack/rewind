@@ -1,40 +1,91 @@
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import PostedTime from '../components/PostedTime';
+
+type Post = {
+  _id: string;
+  userId: string;
+  content: string;
+  createdAt: Date;
+};
+
 function Rewind() {
-  const converse = [
-    {
-      time: '10:10',
-      content: 'htmlをはじめた',
-    },
-    {
-      time: '13:40',
-      content: 'cssをはじめた',
-    },
-    {
-      time: '18:20',
-      content: 'jsをはじめた',
-    },
-  ];
+  const [posts, setPosts] = useState<Post[]>([]);
+
+  const [content, setContent] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const fetchPosts = () => {
+    fetch('/api/posts')
+      .then((res) => {
+        if (res.ok) {
+          return res.json();
+        }
+        throw new Error('Network response was not ok.');
+      })
+      .then((data) => {
+        setPosts(data);
+      });
+  };
+
+  const handlePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!content.trim()) return;
+    setLoading(true);
+    await fetch('/api/posts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: 'userId',
+        content: content,
+      }),
+    });
+    setContent('');
+    fetchPosts();
+    setLoading(false);
+  };
+
   return (
     <div>
       <Link href={'/pastrewind'}>昨日のつぶやき</Link>
       <h2>つぶやき</h2>
-      <textarea
-        name=''
-        id=''
-        cols={30}
-        rows={10}
-        placeholder='つぶやき内容'
-        className='border-2 border-gray-300 rounded-md p-2'
-      ></textarea>
-      <button>つぶやく</button>
+      <form action=''>
+        <input
+          type='text'
+          name=''
+          id=''
+          onChange={(e) => {
+            setContent(e.target.value);
+          }}
+          value={content}
+          placeholder='つぶやきを入力'
+        />
+
+        <button
+          type='submit'
+          disabled={loading}
+          className=''
+          onClick={(e) => {
+            handlePost(e);
+          }}
+        >
+          {loading ? '投稿中...' : '投稿する'}
+        </button>
+      </form>
       <br />
       <h2>つぶやき一覧</h2>
-      {converse.map((item) => (
+      {posts.map((item) => (
         <div
-          key={item.time}
+          key={item._id}
           className=' border-gray-300 p-2'
         >
-          <p>{item.time}</p>
+          <PostedTime timestamp={item.createdAt} />
           <p>{item.content}</p>
         </div>
       ))}

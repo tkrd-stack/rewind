@@ -6,7 +6,15 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  await connectToDatabase();
+  await connectToDatabase().catch((error) => {
+    console.error('Database connection error:', error);
+    return res.status(500).json({ error: 'Database connection error' });
+  });
+
+  if (req.method === 'GET') {
+    const posts = await Post.find().sort({ createdAt: -1 });
+    return res.status(200).json(posts);
+  }
 
   if (req.method === 'POST') {
     const { userId, content } = req.body;
